@@ -1,5 +1,10 @@
 <template>
     <div>
+        <div v-if="!loading">
+            <img class="rounded mx-auto d-block" :src="image" alt="loader" />
+        </div>
+
+        <div v-else>
         <button @click="createModal" class="btn btn-primary btn-block">Add new task</button>
 
         <table class="table">
@@ -16,7 +21,7 @@
       <td>{{ task.name }}</td>
       <td>{{ task.body }}</td>
       <td><button @click="updateModal(index)" class="btn btn-info">Edit</button></td>
-      <td><button class="btn btn-danger">Delete</button></td>
+      <td><button @click="deleteTask(index)" class="btn btn-danger">Delete</button></td>
     </tr>
 
   </tbody>
@@ -94,7 +99,7 @@
 </div>
 
 <!--End modal-->
-
+</div>
     </div>
 </template>
 
@@ -110,7 +115,9 @@
                 tasks: [],
                 uri: 'http://127.0.0.1:8002/tasks',
                 errors: [],
-                new_update_task: []
+                new_update_task: [],
+                image: 'images/spinner.gif',
+                loading: false
             }
         },
 
@@ -128,11 +135,14 @@
             },
 
             createTask(){
+
                 axios.post(this.uri,
                 {name: this.task.name, body: this.task.body}).
                 then(response=>{
                    this.tasks.push(response.data.task);
+                   this.resetData();
                     $('#create-modal').modal('hide');
+                    toastr.success(response.data.message);
                }).catch(error=>{
                 this.errors = [];
 
@@ -175,9 +185,28 @@
 
             },
 
+            resetData(){
+                this.task.name = '',
+                this.task.body = ''
+            },
+
+            deleteTask(index){
+            let confirmBox = confirm("Are you sure you want to delete it?");
+            if(confirmBox === true){
+                axios.delete('http://127.0.0.1:8002/tasks/' + this.tasks[index].id)
+                .then(response=>{
+                    this.$delete(this.tasks, index)
+                }).catch(error=>{
+                    console.log('Could not delete');
+                });
+            }
+
+            },
+
             loadTasks(){
                 axios.get(this.uri).then(response=>{
-                    this.tasks = response.data.tasks
+                    this.tasks = response.data.tasks;
+                    this.loading = true;
                 });
             }
 
